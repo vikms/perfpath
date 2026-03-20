@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PerfPath — Smart Appraisal System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d3a;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f59e0b;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #f87171;
+    --card-bg: #1a1c25;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(110,231,183,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,231,183,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow {
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 400px;
+    background: radial-gradient(ellipse, rgba(110,231,183,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    background: rgba(14,15,20,0.8);
+    position: sticky;
+    top: 0;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span {
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .header-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 40px;
+  }
+
+  .nav-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .nav-tab.active {
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  .tab-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .nav-tab.active .tab-dot { background: var(--accent); }
+
+  /* SECTION HEADING */
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .section-subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  select, input, textarea {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+
+  select:focus, input:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(110,231,183,0.1);
+  }
+
+  select option { background: var(--surface2); }
+
+  textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+  .btn {
+    padding: 13px 28px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f14;
+  }
+
+  .btn-primary:hover {
+    background: #a7f3d0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(110,231,183,0.3);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-sm {
+    padding: 7px 14px;
+    font-size: 0.78rem;
+  }
+
+  /* LOADING */
+  .loading-bar {
+    display: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+
+  .loading-bar.active { display: block; }
+
+  .loading-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px;
+    animation: slide 1.2s ease-in-out infinite;
+  }
+
+  @keyframes slide {
+    0% { transform: translateX(-150%); }
+    100% { transform: translateX(400%); }
+  }
+
+  .loading-msg {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 14px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .loading-msg.active { display: flex; }
+
+  /* GOALS PANEL */
+  #goals-panel { display: none; }
+
+  .goals-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .profile-info { line-height: 1.3; }
+  .profile-name { font-weight: 600; font-size: 0.9rem; }
+  .profile-role { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* SMART GOAL CARD */
+  .goal-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .goal-card:hover { border-color: rgba(110,231,183,0.3); }
+
+  .goal-card-header {
+    padding: 18px 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .goal-number {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .goal-title-wrap { flex: 1; }
+
+  .goal-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  .goal-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-s { background: rgba(110,231,183,0.1); color: var(--accent); }
+  .tag-m { background: rgba(129,140,248,0.1); color: var(--accent2); }
+  .tag-a { background: rgba(245,158,11,0.1); color: var(--accent3); }
+  .tag-r { background: rgba(248,113,113,0.1); color: var(--danger); }
+  .tag-t { background: rgba(167,243,208,0.08); color: #6ee7b7aa; }
+
+  .goal-chevron {
+    color: var(--muted);
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+    margin-top: 8px;
+  }
+
+  .goal-card.expanded .goal-chevron { transform: rotate(180deg); }
+
+  .goal-body {
+    display: none;
+    padding: 0 22px 22px 22px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+
+  .goal-card.expanded .goal-body { display: block; }
+
+  .smart-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .smart-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .smart-pill-label {
+    font-size: 0.6rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+
+  .smart-pill-value {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .kpi-list {
+    margin-top: 14px;
+  }
+
+  .kpi-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+
+  .kpi-item:last-child { border-bottom: none; }
+
+  .kpi-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .kpi-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .kpi-check.checked::after { content: '✓'; font-size: 0.65rem; color: #0e0f14; font-weight: 800; }
+
+  /* EVIDENCE TRACKER */
+  #tracker-panel { display: none; }
+
+  .tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .timeline-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .month-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .month-block.active {
+    border-color: var(--accent);
+    background: rgba(110,231,183,0.05);
+  }
+
+  .month-block:hover { border-color: rgba(110,231,183,0.4); }
+
+  .month-label {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .month-progress {
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .month-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px;
+    transition: width 0.5s;
+  }
+
+  .evidence-count {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Evidence log */
+  .evidence-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .evidence-section-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .evidence-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .evidence-list { padding: 0 18px; }
+
+  .evidence-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .evidence-item:last-child { border-bottom: none; }
+
+  .ev-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .ev-content { flex: 1; }
+
+  .ev-text { font-size: 0.88rem; margin-bottom: 4px; }
+
+  .ev-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ev-goal-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.65rem;
+    color: var(--accent2);
+  }
+
+  .ev-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .ev-delete:hover { color: var(--danger); }
+
+  /* Add Evidence Form */
+  .add-evidence-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .add-evidence-form h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .ev-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .ev-type-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .ev-type-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .ev-type-btn.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(110,231,183,0.08);
+  }
+
+  /* PROGRESS SUMMARY */
+  .progress-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .prog-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .prog-label {
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .prog-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .prog-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.88rem; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 0.85rem;
+    z-index: 1000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    max-width: 300px;
+  }
+
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Persona pills */
+  .persona-pills {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .persona-pill {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s;
+  }
+
+  .persona-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .persona-pill.selected {
+    background: rgba(110,231,183,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(110,231,183,0.1);
+  }
+
+  /* Toggle optional button */
+  .toggle-optional-btn {
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: 'DM Mono', monospace;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .toggle-optional-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .toggle-optional-btn.open {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(110,231,183,0.06);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    header { padding: 16px 20px; }
+    .container { padding: 28px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .smart-grid { grid-template-columns: repeat(2, 1fr); }
+    .timeline-strip { grid-template-columns: repeat(3, 1fr); }
+    .progress-cards { grid-template-columns: 1fr 1fr; }
+    .ev-form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<header>
+  <div class="logo">Perf<span>Path</span></div>
+  <div class="header-tag">AI Performance Appraisal</div>
+</header>
+
+<div class="container">
+
+  <!-- NAV TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('setup')" id="tab-setup">
+      <span class="tab-dot"></span> Setup & Goals
+    </button>
+    <button class="nav-tab" onclick="switchTab('tracker')" id="tab-tracker">
+      <span class="tab-dot"></span> Evidence Tracker
+    </button>
+  </div>
+
+  <!-- ===================== SETUP PANEL ===================== -->
+  <div id="setup-panel">
+    <div class="section-title">Generate SMART Goals</div>
+    <div class="section-subtitle">Enter the appraisee's details and expectations to generate tailored SMART goals.</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="emp-name" placeholder="e.g. Nguyen Van A" />
+      </div>
+      <div class="form-group">
+        <label>Role / Function</label>
+        <select id="emp-role">
+          <option value="">Select role...</option>
+          <option value="QA">QA Engineer</option>
+          <option value="DEV">Developer</option>
+          <option value="BA">Business Analyst</option>
+          <option value="Manager">Manager</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Level</label>
+        <select id="emp-level" onchange="updatePersonas()">
+          <option value="">Select level...</option>
+          <option value="Junior">Junior</option>
+          <option value="Senior">Senior</option>
+          <option value="Principal">Principal / Staff</option>
+        </select>
+      </div>
+      <!-- Persona: hidden by default, toggle to show -->
+      <div class="form-group full" id="persona-toggle-row" style="margin-top:-4px;">
+        <button type="button" class="toggle-optional-btn" onclick="togglePersonaField()" id="persona-toggle-btn">
+          <span id="persona-toggle-icon">＋</span> Set Persona <span style="font-size:0.7rem;opacity:0.5;">(optional)</span>
+        </button>
+        <div id="persona-field-wrap" style="display:none;margin-top:10px;">
+          <div class="persona-pills" id="persona-pills">
+            <span style="font-size:0.8rem;color:var(--muted);">Select level & role first...</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>High-Level Expectations for this Period</label>
+        <textarea id="emp-expectations" placeholder="e.g. Improve test automation coverage, mentor junior QAs, reduce regression time by 30%, contribute to CI/CD pipeline improvements..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Appraisal Period Start</label>
+        <input type="date" id="period-start" />
+      </div>
+      <div class="form-group">
+        <label>Appraisal Period End</label>
+        <input type="date" id="period-end" />
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="generateGoals()">
+      ✦ Generate SMART Goals
+    </button>
+
+    <div class="loading-bar" id="loading-bar"></div>
+    <div class="loading-msg" id="loading-msg">
+      <span>⟳</span> Building your SMART goals...
+    </div>
+  </div>
+
+  <!-- ===================== GOALS PANEL ===================== -->
+  <div id="goals-panel">
+    <div class="goals-header">
+      <div>
+        <div class="section-title">SMART Goals</div>
+        <div class="section-subtitle">Review, expand, and track goals for this appraisal period.</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="profile-badge" id="profile-badge"></div>
+        <button class="btn btn-secondary btn-sm" onclick="resetSetup()">↩ New Profile</button>
+        <button class="btn btn-primary btn-sm" onclick="goToTracker()">→ Open Tracker</button>
+      </div>
+    </div>
+    <div id="goals-list"></div>
+  </div>
+
+  <!-- ===================== TRACKER PANEL ===================== -->
+  <div id="tracker-panel">
+    <div class="tracker-header">
+      <div>
+        <div class="section-title">Evidence Tracker</div>
+        <div class="section-subtitle">Log and track evidence across your 6-month appraisal period.</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="switchTab('setup')">← Back to Goals</button>
+    </div>
+
+    <!-- Progress Summary -->
+    <div class="progress-cards" id="progress-cards"></div>
+
+    <!-- Timeline -->
+    <div class="timeline-strip" id="timeline-strip"></div>
+
+    <!-- Add Evidence Form -->
+    <div class="add-evidence-form">
+      <h4>+ Add New Evidence</h4>
+      <div class="ev-type-grid" id="ev-type-grid">
+        <button class="ev-type-btn selected" onclick="selectEvType(this,'📄')">📄 Document</button>
+        <button class="ev-type-btn" onclick="selectEvType(this,'💬')">💬 Feedback</button>
+        <button class="ev-type-btn" onclick="selectEvType(this,'🏆')">🏆 Achievement</button>
+        <button class="ev-type-btn" onclick="selectEvType(this,'📊')">📊 Metric</button>
+        <button class="ev-type-btn" onclick="selectEvType(this,'🎓')">🎓 Learning</button>
+        <button class="ev-type-btn" onclick="selectEvType(this,'🔗')">🔗 Link / PR</button>
+      </div>
+      <div class="ev-form-grid">
+        <div class="form-group">
+          <label>Link to Goal</label>
+          <select id="ev-goal-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Month</label>
+          <select id="ev-month-select">
+            <option>Month 1</option><option>Month 2</option>
+            <option>Month 3</option><option>Month 4</option>
+            <option>Month 5</option><option>Month 6</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Evidence Description</label>
+        <input type="text" id="ev-description" placeholder="e.g. Raised test coverage from 62% to 78% — sprint report attached" />
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addEvidence()">+ Add Evidence</button>
+    </div>
+
+    <!-- Evidence Log -->
+    <div id="evidence-log"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===================== STATE =====================
+let state = {
+  employee: {},
+  goals: [],
+  evidence: [],
+  currentEvType: '📄',
+  activeMonth: 1,
+};
+
+// ===================== TAB SWITCHING =====================
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + (tab === 'tracker' ? 'tracker' : 'setup')).classList.add('active');
+
+  document.getElementById('setup-panel').style.display = 'none';
+  document.getElementById('goals-panel').style.display = 'none';
+  document.getElementById('tracker-panel').style.display = 'none';
+
+  if (tab === 'tracker') {
+    document.getElementById('tracker-panel').style.display = 'block';
+    renderTracker();
+  } else {
+    if (state.goals.length > 0) {
+      document.getElementById('goals-panel').style.display = 'block';
+    } else {
+      document.getElementById('setup-panel').style.display = 'block';
+    }
+  }
+}
+
+function goToTracker() {
+  switchTab('tracker');
+  document.getElementById('tab-tracker').classList.add('active');
+  document.getElementById('tab-setup').classList.remove('active');
+}
+
+function resetSetup() {
+  state = { employee: {}, goals: [], evidence: [], currentEvType: '📄', activeMonth: 1 };
+  document.getElementById('goals-panel').style.display = 'none';
+  document.getElementById('setup-panel').style.display = 'block';
+}
+
+// ===================== GENERATE GOALS =====================
+function generateGoals() {
+  const name = document.getElementById('emp-name').value.trim();
+  const role = document.getElementById('emp-role').value;
+  const level = document.getElementById('emp-level').value;
+  const selectedPill = document.querySelector('.persona-pill.selected');
+  const persona = selectedPill ? selectedPill.dataset.num : null;
+  const expectations = document.getElementById('emp-expectations').value.trim();
+  const start = document.getElementById('period-start').value;
+  const end = document.getElementById('period-end').value;
+
+  if (!role || !level) { showToast('Please select a role and level.'); return; }
+  if (!expectations) { showToast('Please enter expectations for this period.'); return; }
+
+  state.employee = { name: name || 'Appraisee', role, level, persona: persona ? `Persona ${persona}` : null, start, end };
+
+  document.getElementById('loading-bar').classList.add('active');
+  document.getElementById('loading-msg').classList.add('active');
+
+  // Small delay so the loading bar renders before sync work
+  setTimeout(() => {
+    // 100% offline — generate from built-in templates
+    state.goals = buildOfflineGoals(role, level, persona, expectations);
+
+    document.getElementById('loading-bar').classList.remove('active');
+    document.getElementById('loading-msg').classList.remove('active');
+
+    renderGoals();
+    document.getElementById('setup-panel').style.display = 'none';
+    document.getElementById('goals-panel').style.display = 'block';
+    showToast('✦ 4 SMART goals generated!');
+  }, 400);
+}
+
+// ===================== OFFLINE GOAL ENGINE =====================
+// Built from company performance appraisal framework (AllTeam_PA)
+// Covers: QA · DEV · BA · Manager  ×  Junior · Senior · Principal
+
+
+// ===================== OFFLINE GOAL ENGINE =====================
+// Source: AllTeam_PA.xmind — company PA framework
+// Roles: QA (Automation & Manual), DEV, BA, Manager (EM/SM)
+// Levels: Junior · Senior · Principal
+// Winning Ways: Integrity · Agility · Collaboration · Customer Focus · Continuous Improvement (20% each)
+
+const GOAL_BANK = {
+
+  // ─────────────────────────────────────────────────────────────
+  QA: {
+    Junior: [
+      {
+        title: "Execute Test Activities to Zero-Escape Standard",
+        specific: "Fully execute 100% of assigned test scripts each testing cycle (regression, release, bug-fix verification). File all defects using predefined templates (qTest/Jira) with root-cause, steps-to-reproduce, severity, and zero missing fields. Send cycle reports without missing details following predefined standards.",
+        measurable: "Test script execution rate = 100% per cycle; defect rejection rate < 5%; zero critical/high defect escapes to next release cycle; reports delivered on time every cycle.",
+        achievable: "Core Junior QA responsibility — templates, tools (qTest, Xmind), and senior QA mentoring are already in place.",
+        relevant: "Directly supports team quality goal: C/H escapes < 9 bugs, All < 22 bugs per quarter. Non-negotiable baseline for Junior QA.",
+        timeBound: "Month 1: shadow senior QA and learn templates; Month 2–3: execute independently under review; Month 4–6: sustain independently and contribute to strategy.",
+        kpis: ["Test execution completion rate (target: 100%)", "Defect rejection rate (target: <5%)", "Critical/High escape count (target: 0 per cycle)"],
+        trackingTips: "Save test cycle reports, qTest/Jira screenshots, defect links per cycle, and email confirmation of report submissions."
+      },
+      {
+        title: "Obtain Domain Knowledge & Apply Risk-Based Testing",
+        specific: "Complete all required product trainings; demonstrate understanding of all assigned product flows (Cranium/other) by actively participating in requirement discussions. Apply SFDIPOT and RCRCRC risk analysis models to identify impacted areas. Keep qTest and Xmind test artifacts up to date.",
+        measurable: "100% required trainings completed; able to answer ≥80% of product questions in team discussions independently by Month 3; Xmind/qTest artifacts updated within 24 hrs of changes.",
+        achievable: "Structured training plan and senior QA knowledge-sharing sessions make this realistic in 3 months.",
+        relevant: "Domain knowledge is prerequisite for risk-based testing — directly reduces test blind spots and escape bugs.",
+        timeBound: "Month 1–2: complete onboarding trainings; Month 3: first independent testing cycle; Month 4–6: apply SFDIPOT/RCRCRC proactively.",
+        kpis: ["Training completion % (target: 100%)", "Clarification requests to seniors (target: decreasing trend)", "Test artifact freshness (updated within 24hrs of changes)"],
+        trackingTips: "Save training certificates, meeting notes where you contributed independently, and qTest/Xmind update history."
+      },
+      {
+        title: "Support Automation — Analysis & Simple Scripting",
+        specific: "Analyze automation run results and triage failures; able to understand and edit assigned automation scripts using the team's framework (Protractor/FW provided by Auto team). Complete at least one simple API or UI automation task using provided framework and coding standards.",
+        measurable: "Automation result analysis completed within 24 hrs of each CI run; ≥1 simple automation task independently scripted and peer-reviewed; keyword utilization follows team standards.",
+        achievable: "Auto team provides the framework and keywords — Junior QA needs to learn usage, not build from scratch.",
+        relevant: "Automation literacy is a core QA skill as per team framework and enables scalable regression coverage.",
+        timeBound: "Month 1–2: learn framework and analyze existing results; Month 3–4: write first script; Month 5–6: maintain assigned scripts independently.",
+        kpis: ["Automation result analysis turnaround (target: <24hrs)", "Scripts independently written and reviewed", "Script errors requiring senior rework (target: decreasing)"],
+        trackingTips: "Save automation run reports, PR links for scripts written, and peer review feedback."
+      },
+      {
+        title: "Team Contribution — Utilization, Process & Winning Ways",
+        specific: "Maintain ≥6.5 productive hours/day; follow all predefined processes (timereg, report templates, coding standards, defect standards); participate in all knowledge-sharing sessions (English, Automation, Domain); prepare data for weekly/monthly/quarterly reports.",
+        measurable: "Utilization ≥6.5 hrs/day for ≥90% of working days; 100% process template compliance; 100% KS session attendance; reports submitted on time every period.",
+        achievable: "Achievable with consistent daily habits and manager check-in support.",
+        relevant: "Utilization and process compliance are foundational Junior QA performance standards. Aligns to Winning Ways: Integrity (20%) and Collaboration (20%).",
+        timeBound: "Ongoing from Month 1; timereg and report habits set by Month 2; reviewed at Month 3 and Month 6.",
+        kpis: ["Daily utilization rate (target: ≥6.5hrs, ≥90% of days)", "Process compliance rate (target: 100%)", "Report on-time delivery rate"],
+        trackingTips: "Export timereg monthly reports; save process compliance feedback; keep KS attendance records."
+      },
+    ],
+
+    Senior: [
+      {
+        title: "Own Test Strategy & Drive Zero-Escape Quality",
+        specific: "Define and own the testing strategy for assigned product area: risk analysis (SFDIPOT/RCRCRC), regression scope, defect escape thresholds, and release sign-off criteria. Arrange workload across team to support client releases on time. Coordinate with QA lead without need for clarification or rework. Define standards for defect reports, test cases, and cycle emails.",
+        measurable: "Zero critical/high defect escapes to production; regression executed 100% per cycle; release sign-off delivered on time; zero rework requests from QA lead.",
+        achievable: "Senior QA with product knowledge, tool access, and team context can own this end-to-end.",
+        relevant: "Core Senior QA accountability — owns release quality and team standards. Directly maps to team goals: C/H escapes < 9 bugs per quarter.",
+        timeBound: "Month 1: audit current strategy gaps; Month 2–3: revise and align with QA lead; Month 4–6: execute, measure, and document.",
+        kpis: ["Critical/High defect escape count (target: 0)", "Regression completion rate (target: 100%)", "Rework requests from QA lead (target: 0)"],
+        trackingTips: "Save test strategy docs, release sign-off emails, defect escape post-mortems, and cycle completion reports."
+      },
+      {
+        title: "Lead Automation Coverage & Framework Health",
+        specific: "Expand automated test coverage for critical regression flows; develop and maintain test scripts following coding standards; organize test suites by product feature and priority; support team in achieving automation coverage goal. Analyze CI/CD run results and triage failures proactively.",
+        measurable: "Automation coverage ≥75% for assigned product area; flaky test rate <5%; CI/CD automation pass rate >90%; test suites organized by feature and coverage target met.",
+        achievable: "Senior QA with automation framework access can achieve this with 2–3 months of focused scripting and review effort.",
+        relevant: "Automation reduces regression time and scales quality — core Senior QA delivery in automation-oriented teams.",
+        timeBound: "Month 1–2: audit coverage gaps; Month 3–4: write and organize new scripts; Month 5–6: stabilize, document, and handover runbook.",
+        kpis: ["Automation coverage % (target: ≥75%)", "Flaky test rate (target: <5%)", "CI/CD pass rate (target: >90%)"],
+        trackingTips: "Export coverage reports from CI tool; save automation run logs and trend charts; link PRs for script changes."
+      },
+      {
+        title: "Coach Junior QA & Elevate Team Standards",
+        specific: "Actively coach junior QA members on testing techniques (SFDIPOT/RCRCRC), defect reporting, and tool usage. Define and enforce standard formats for test cases, defect reports, cycle emails, and coding standards. Resolve team work issues and escalate risks to higher management proactively.",
+        measurable: "Junior QA defect rejection rate improves by ≥30% within 3 months of coaching; 100% team follows defined templates; ≥1 risk escalated to management before it impacts release.",
+        achievable: "Achievable through weekly 1:1 coaching sessions and documented template standards.",
+        relevant: "Leadership and mentoring are explicit Senior QA responsibilities per company PA framework. Aligns to Winning Ways: Collaboration (20%).",
+        timeBound: "Month 1: assess gaps and create coaching plan; Month 2–4: active coaching; Month 5–6: measure improvement and adjust.",
+        kpis: ["Junior QA defect rejection rate improvement (target: ≥30%)", "Template compliance rate (target: 100%)", "Proactive risk escalations count"],
+        trackingTips: "Keep coaching session notes; save template adoption evidence; document risks escalated and outcomes."
+      },
+      {
+        title: "Company Contribution — KS, Winning Ways & Techcon",
+        specific: "Run or co-run ≥2 knowledge-sharing sessions per period (English, Automation, Domain Knowledge, or RCA/retrospective). Contribute ≥2 process improvement proposals based on defect RCA and test strategy learnings. Represent team in company activities (trainer for Testing program, Techcon presenter, or bid support).",
+        measurable: "≥2 KS sessions delivered; ≥2 improvement proposals submitted and reviewed; ≥1 company activity contribution; peer Winning Ways score ≥4/5.",
+        achievable: "One KS per quarter and one improvement proposal per quarter is realistic at Senior level.",
+        relevant: "Aligns to company Winning Ways — Continuous Improvement (20%) and Collaboration (20%). Company activity contribution is explicitly expected at Senior level.",
+        timeBound: "Month 1: plan KS calendar; Month 2 & 5: deliver sessions; improvement proposals ongoing quarterly.",
+        kpis: ["KS sessions delivered (target: ≥2)", "Improvement proposals accepted", "Company activity contributions", "Peer Winning Ways score"],
+        trackingTips: "Save KS presentation decks, proposal documents, Confluence/wiki pages, and peer survey results."
+      },
+    ],
+
+    Principal: [
+      {
+        title: "Define QA Chapter Standards & Quality Architecture",
+        specific: "Establish and document QA standards, testing frameworks, defect thresholds, and quality gates applicable across multiple project teams. Create reusable templates for test strategy, defect reporting, automation patterns, and cycle reporting. Define H/C escaped defect violation thresholds for teams.",
+        measurable: "Standards adopted by ≥2 project teams; all new projects onboard using standard templates within Month 1 of kickoff; quality incident rate reduction measurable across teams.",
+        achievable: "Principal QA has cross-team seniority and authority to drive this.",
+        relevant: "Scales quality impact beyond one team — core Principal-level contribution. Covers Service Delivery Excellence and Process Standardization goals in company PA framework.",
+        timeBound: "Month 1–2: audit current state across teams; Month 3–4: publish standards v1; Month 5–6: rollout, validate adoption, and iterate.",
+        kpis: ["Teams adopting standards", "Template reuse rate across projects", "Quality incident rate trend (target: reduction)"],
+        trackingTips: "Save standards documents, adoption confirmation emails, and quality metric comparisons before/after rollout."
+      },
+      {
+        title: "Lead AI & Advanced Automation Adoption",
+        specific: "Evaluate and pilot AI-assisted testing tools and advanced automation frameworks; publish findings and lead the adoption roadmap for the QA chapter. Drive CI/CD integration of automation and test reporting. Contribute to Technology & Innovation goals including AI Adoption roadmap.",
+        measurable: "≥1 AI/advanced automation tool piloted and evaluated; adoption recommendation delivered to leadership by Month 4; ≥1 CI/CD improvement shipped.",
+        achievable: "Principal level has authority and time allocation to run a structured pilot.",
+        relevant: "Directly maps to Technology & Innovation Goal — AI Adoption and Automation & Continuous Testing Implementation in company PA framework.",
+        timeBound: "Month 1–2: research and select tool; Month 3–4: pilot on live project; Month 5–6: present findings and define adoption plan.",
+        kpis: ["Tools evaluated and compared", "Pilot project completed", "Adoption recommendation delivered", "CI/CD improvements shipped"],
+        trackingTips: "Save pilot reports, tool comparison matrices, demo recordings, and leadership presentation decks."
+      },
+      {
+        title: "Build QA Talent Pipeline & KT Capability",
+        specific: "Design and deliver training programs for QA chapter (Manual and Automation). Mentor Senior QAs on leadership competencies. Define Knowledge Transfer framework for new joiners. Contribute to Insurance/PKI/Financial domain KT goals. Be a trainer for the Testing program.",
+        measurable: "≥1 internal training program delivered; ≥2 Senior QAs in structured mentorship; onboarding/KT guide published; training feedback score ≥4/5.",
+        achievable: "Principal QA is expected to own talent development — time is allocated for this at this level.",
+        relevant: "Maps to Knowledge Transfer & Capability Building goal across accounts in the company PA framework.",
+        timeBound: "Month 1: assess gaps; Month 2–3: design program; Month 4–5: deliver; Month 6: evaluate impact.",
+        kpis: ["Training programs delivered", "Senior QA mentees in development", "Onboarding completion time (target: reduction)", "Training feedback score"],
+        trackingTips: "Save training materials, mentoring session notes, onboarding guide versions, and participant feedback forms."
+      },
+      {
+        title: "Company Leadership — Bidding, Techcon & Success Metrics",
+        specific: "Contribute to ≥1 project bid as QA SME. Present at Techcon or equivalent company event with positive outcome. Own the QA Success Metrics Dashboard — define, baseline, and report quality KPIs across accounts to leadership.",
+        measurable: "≥1 bid contribution; ≥1 Techcon/internal presentation with ≥4/5 feedback; Success Metrics Dashboard live and reported monthly by Month 3.",
+        achievable: "Principal level is expected to operate at company level — these are explicitly listed company activities.",
+        relevant: "Maps to company activities contribution and Success Metrics Dashboard goal in the company PA framework.",
+        timeBound: "Dashboard live: Month 2; Techcon: Month 3–5; Bidding: opportunistic throughout period.",
+        kpis: ["Bids contributed", "Presentations delivered and rated", "Dashboard published and updated monthly", "Stakeholder satisfaction score"],
+        trackingTips: "Save bid documents, Techcon slide decks, dashboard screenshots, and monthly KPI reports."
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  DEV: {
+    Junior: [
+      {
+        title: "Deliver Sprint Stories to Definition of Done",
+        specific: "Complete all assigned development stories following the team's DoD: investigate requirements in grooming, provide solution and estimate, task out in Azure/Jira, burn down daily, write unit tests, run SonarQube, pass code review, and deploy to test environment on time.",
+        measurable: "100% of sprint stories meet DoD before sprint end; unit test coverage ≥80% on new code; zero stories reopened due to missed DoD criteria; daily burn-down updated consistently.",
+        achievable: "Guided by senior devs and a well-defined DoD checklist. Grooming and planning ceremonies provide structure.",
+        relevant: "Core delivery responsibility for Junior Developer. Directly supports team sprint goal and release criteria.",
+        timeBound: "Ongoing per sprint from Month 1; review velocity trend and DoD compliance at Month 3 and Month 6.",
+        kpis: ["Sprint story completion rate (target: 100%)", "Unit test coverage on new code (target: ≥80%)", "Stories reopened due to DoD miss (target: 0)"],
+        trackingTips: "Save sprint reports, SonarQube results, PR links, and code review feedback per sprint."
+      },
+      {
+        title: "Follow Agile Processes & Team Engineering Standards",
+        specific: "Actively participate in all scrum ceremonies (grooming, planning, stand-up, review, retro). Task out stories in Azure/Jira. Burn down effort daily. Follow predefined coding standards, SOLID/KISS/DRY principles, and team working process. Be on-time to all meetings and commitments.",
+        measurable: "100% ceremony attendance; daily burn-down updated; zero coding standard violations flagged in PR reviews by Month 3; commitments met on time ≥95% of sprints.",
+        achievable: "Achievable with structured daily habits, team accountability, and senior dev pairing.",
+        relevant: "Process compliance is foundational Junior Dev expectation per company PA framework. Enables predictable delivery.",
+        timeBound: "From Month 1; habits assessed at Month 3 retrospective; fully independent by Month 4.",
+        kpis: ["Ceremony attendance rate (target: 100%)", "Daily burn-down consistency", "Coding standard violations in PRs (target: 0 by Month 3)"],
+        trackingTips: "Export Azure/Jira sprint reports; save PR review comment history; keep attendance records."
+      },
+      {
+        title: "Build Domain Knowledge & Technical Skills",
+        specific: "Complete all required onboarding and product trainings. Understand all flows from assigned product areas. Actively join requirement discussions and grooming with increasing confidence. Conduct knowledge sharing on learnings to the team (English, technical topics, or domain). Maintain utilization ≥6.5 hrs/day.",
+        measurable: "100% training completion; estimation accuracy within 20% of actuals by Month 4; contribute to ≥3 grooming discussions per sprint; utilization ≥6.5 hrs/day for ≥90% of days.",
+        achievable: "Mentorship from senior devs and structured training plan — learning curve supported.",
+        relevant: "Domain knowledge improves estimation, reduces rework, and enables independent delivery. Utilization is a baseline company KPI.",
+        timeBound: "Month 1–2: onboarding; Month 3: first independent estimates; Month 4–6: improve estimation accuracy.",
+        kpis: ["Training completion % (target: 100%)", "Estimation accuracy vs actuals", "Grooming contributions per sprint", "Daily utilization rate"],
+        trackingTips: "Save training certificates, grooming meeting notes, sprint estimation vs actuals data, and timereg reports."
+      },
+      {
+        title: "Code Quality & Multi-Assignment Versatility",
+        specific: "Able to work across multiple assignment types: backend (API/BE), frontend (FE/UI), unit tests, and automation tasks. Follow team DoD including SonarQube quality gate, unit test coverage, and API/UI automation as required. Meet team's release criteria on escaped bug count.",
+        measurable: "Able to handle ≥2 assignment types by Month 4; SonarQube quality gate passed on all PRs; escaped bug count meets team release criteria each sprint.",
+        achievable: "Junior Dev grows into multi-assignment work through pairing and structured task rotation.",
+        relevant: "Versatility is a core Junior Dev expectation — team depends on flexible contribution across BE, FE, and testing.",
+        timeBound: "Month 1–2: focus on primary stack; Month 3: begin cross-training on second type; Month 4–6: demonstrate independence in ≥2 types.",
+        kpis: ["Assignment types handled independently", "SonarQube gate pass rate (target: 100%)", "Escaped bugs per sprint (vs team release criteria)"],
+        trackingTips: "Save PR links by type, SonarQube reports, and sprint escaped bug tallies."
+      },
+    ],
+
+    Senior: [
+      {
+        title: "Own Feature Delivery End-to-End with High Quality",
+        specific: "Lead development of assigned features from grooming to production: investigate requirements thoroughly, propose technical solutions with pros/cons, identify risks, write clean code following SOLID/KISS/DRY, run SonarQube, peer-review team PRs, and ensure zero escaped critical/high bugs per release.",
+        measurable: "Zero critical/high escaped bugs; unit test coverage ≥80%; PR review turnaround <2 days; features delivered on release schedule; SonarQube quality gate green on all own PRs.",
+        achievable: "Senior Dev with product knowledge and tool access owns this full cycle.",
+        relevant: "Core Senior Dev accountability — end-to-end feature ownership with quality gate responsibility.",
+        timeBound: "Ongoing per sprint; track escaped bugs per release; review at Month 3 and Month 6.",
+        kpis: ["Critical/High escaped bug count (target: 0)", "Unit test coverage (target: ≥80%)", "PR review turnaround (target: <2 days)", "Feature on-time delivery %"],
+        trackingTips: "Save release reports, SonarQube trend screenshots, PR links, and post-release bug tally per sprint."
+      },
+      {
+        title: "Drive Technical Debt Reduction & Codebase Health",
+        specific: "Identify legacy modules and code quality issues via SonarQube and team retrospectives. Propose and execute ≥3 refactoring initiatives. Define and document coding standards, API design principles, and development practices for the team. Coordinate these without need for clarification or rework from onsite lead.",
+        measurable: "≥3 refactoring initiatives completed and reviewed; SonarQube quality score improved from baseline; coding standards document adopted by team; zero rework requests from onsite lead.",
+        achievable: "One initiative per 2 months alongside sprint work is realistic.",
+        relevant: "Technical health directly improves team velocity, release stability, and long-term maintainability.",
+        timeBound: "Month 1: audit and propose list; Month 2–3: first initiative; Month 4–5: second; Month 6: third and document standards.",
+        kpis: ["Refactoring initiatives completed (target: ≥3)", "SonarQube score trend", "Standards document adoption rate"],
+        trackingTips: "Save proposal docs, PR links for each refactor, SonarQube before/after screenshots, and standards doc version history."
+      },
+      {
+        title: "Mentor Junior Developers & Lead Technical KS",
+        specific: "Coach junior developers on coding practices, DoD standards, and grooming techniques. Conduct ≥2 technical knowledge-sharing sessions (technical topics, domain knowledge, or English). Define and enforce review standards for the team. Sense risks and share/escalate to management proactively.",
+        measurable: "Junior dev PR quality improvement ≥30% within 3 months of coaching; ≥2 KS sessions delivered; coding review standards documented and used; ≥1 risk escalated before impacting release.",
+        achievable: "1:1 coaching sessions and a structured KS calendar are manageable alongside sprint delivery.",
+        relevant: "Leadership and mentoring are explicit Senior Dev responsibilities. Aligns to Winning Ways — Collaboration (20%) and Continuous Improvement (20%).",
+        timeBound: "Month 1: assess gaps; Month 2–3: coaching plan active; Month 3 & 5: KS sessions; Month 6: measure improvement.",
+        kpis: ["Junior dev PR quality improvement", "KS sessions delivered (target: ≥2)", "Risk escalations count", "Standards adoption rate"],
+        trackingTips: "Save PR review feedback threads, KS decks, junior dev progress notes, and risk escalation records."
+      },
+      {
+        title: "Team Productivity, QBR Goals & Winning Ways",
+        specific: "Monitor and support team's sprint productivity and QBR goal achievement. Coordinate effectively with onsite lead without clarification or rework. Contribute to company activities: trainer for Developer program, Techcon presenter, or bid support. Model Winning Ways behaviors in daily interactions.",
+        measurable: "Team QBR goals met; zero rework from onsite; ≥1 company activity contribution; peer Winning Ways assessment score ≥4/5.",
+        achievable: "Realistic with structured weekly syncs, documented risk log, and planned company activity participation.",
+        relevant: "Aligns to Winning Ways — Integrity (20%), Agility (20%), Customer Focus (20%). Company activity contribution is expected at Senior level.",
+        timeBound: "QBR: review at Month 3 and Month 6; company activity: target Month 3–5; Winning Ways: assessed at Month 6.",
+        kpis: ["QBR goal completion rate", "Rework requests from onsite (target: 0)", "Company activity contributions", "Winning Ways peer score"],
+        trackingTips: "Save QBR tracking sheets, onsite communication threads, Techcon materials, and peer survey results."
+      },
+    ],
+
+    Principal: [
+      {
+        title: "Define Engineering Architecture & Standards Across Teams",
+        specific: "Lead architecture decisions for major features and platform components. Define and publish engineering best practices: coding standards, API design (REST/GraphQL/gRPC), SOLID/OWASP security, testing pyramid, and CI/CD patterns. Establish these for adoption across multiple project teams.",
+        measurable: "Architecture reviewed and approved for ≥2 major features; standards adopted by ≥2 teams; architecture decision records (ADRs) published; SonarQube baselines improved org-wide.",
+        achievable: "Principal Dev has the mandate and cross-team access to drive architectural standards.",
+        relevant: "Core Principal-level contribution — multiplies engineering quality and consistency across the organization.",
+        timeBound: "Month 1–2: audit current state; Month 3: publish standards v1 and ADR template; Month 4–6: rollout, validate, and iterate.",
+        kpis: ["ADRs published", "Teams adopting standards", "Architecture review coverage", "Engineering incidents post-release (target: reduction)"],
+        trackingTips: "Save ADRs, standards documents, team adoption confirmations, and incident trend reports."
+      },
+      {
+        title: "Drive Technology Innovation — Cloud, AI & DevOps",
+        specific: "Evaluate and recommend adoption of modern patterns: cloud-native (12-factor), AI coding tools, microservices, Kubernetes, or advanced CI/CD (Jenkins, TeamCity). Lead ≥1 innovation pilot on a live project. Contribute to platform modernization strategy.",
+        measurable: "≥1 technology pilot completed with documented outcomes; recommendation presented to leadership by Month 4; ≥1 CI/CD or cloud improvement shipped.",
+        achievable: "Principal level has authority and budget allocation for innovation work.",
+        relevant: "Maps to AI Adoption and Platform Modernization goals in company PA framework.",
+        timeBound: "Month 1: identify opportunities; Month 2–3: design pilot; Month 4: execute; Month 5–6: present findings and plan adoption.",
+        kpis: ["Pilots completed", "CI/CD or cloud improvements shipped", "Leadership recommendation delivered", "Team adoption rate"],
+        trackingTips: "Save pilot reports, architecture diagrams, CI/CD PRs, and leadership presentation decks."
+      },
+      {
+        title: "Build Developer Talent Pipeline & Engineering Culture",
+        specific: "Design and deliver developer training programs (BE/FE/DevOps). Mentor Senior Devs on technical leadership and architecture. Contribute to hiring standards and technical interview design. Lead or co-lead technical KS sessions and represent team at Techcon.",
+        measurable: "≥1 training program delivered; ≥2 Senior Devs in structured mentorship; interview guide updated; training feedback score ≥4/5; ≥1 Techcon presentation.",
+        achievable: "Principal Dev is expected to own the talent pipeline — time is protected for this.",
+        relevant: "Capability building multiplies output and reduces key-person risk. Maps to People Management expectations in PA framework.",
+        timeBound: "Month 1–2: assess gaps and design; Month 3–4: launch program; Month 5–6: measure and iterate.",
+        kpis: ["Training programs delivered", "Senior Dev readiness scores", "Interview guide adoption", "Techcon presentations"],
+        trackingTips: "Save training materials, mentoring session notes, interview guide version, and participant feedback."
+      },
+      {
+        title: "Company Leadership — Bidding, Techcon & Cross-Team Delivery",
+        specific: "Contribute as technical SME in ≥1 project bid. Present at Techcon or equivalent company event. Lead cross-team delivery alignment — define shared standards, resolve inter-team technical dependencies, and monitor team productivity against QBR goals.",
+        measurable: "≥1 bid contribution; ≥1 Techcon presentation with positive outcome; cross-team dependency resolution time reduced by ≥25%; shared standards adopted by all reporting teams.",
+        achievable: "Principal level operates at company level — these are explicitly listed company activities in the PA framework.",
+        relevant: "External representation and cross-team leadership are Principal-level expectations per PA framework.",
+        timeBound: "Techcon: Month 3–5; Bids: opportunistic; Cross-team standards: Month 1–3 publish, Month 4–6 measure.",
+        kpis: ["Bids contributed", "Techcon presentations rated", "Cross-team dependency resolution time", "Standards adoption rate"],
+        trackingTips: "Save bid documents, presentation decks, dependency resolution logs, and standards adoption evidence."
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  BA: {
+    Junior: [
+      {
+        title: "Deliver Well-Formed User Stories Meeting DoR (INVEST)",
+        specific: "Write and manage user stories following INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable). Groom backlog in Jira, follow DoR before sprint planning, and collect early feedback from PM on new features. Keep Jira and Xmind test artifacts up to date within 24 hrs of changes.",
+        measurable: "Story rejection rate <10% per sprint; 100% of stories pass DoR check before planning; backlog updated within 24 hrs of changes; Jira and Xmind synchronized.",
+        achievable: "Senior BA mentorship and PM collaboration make INVEST standards achievable within 2 months.",
+        relevant: "Core Junior BA responsibility — quality stories directly enable development velocity and prevent rework.",
+        timeBound: "Month 1: learn INVEST and Jira standards; Month 2–3: apply independently; Month 4–6: sustain and reduce rejection rate.",
+        kpis: ["Story rejection rate per sprint (target: <10%)", "INVEST compliance rate (target: 100% before planning)", "Backlog freshness (updated within 24hrs)"],
+        trackingTips: "Export sprint backlog reports; save story review feedback from PM and dev team; track rejection reasons."
+      },
+      {
+        title: "Manage Stakeholder Communication & Sprint Follow-Up",
+        specific: "Act as the main liaison between scrum team and Product Manager for all requirement-related items. Follow up with sprint progress to ensure sprint goal and UAT readiness. Re-evaluate release progress after each sprint; communicate risks of scope overrun to PM proactively. Attend all scrum activities (refinement, grooming, review/demo).",
+        measurable: "Zero blocked stories due to missing requirements; respond to stakeholder queries within 1 business day; 100% sprint ceremony attendance; ≥0 scope risks communicated to PM before impacting release.",
+        achievable: "Achievable with structured communication habits and weekly PM sync meetings.",
+        relevant: "Stakeholder communication is a core BA competency — directly reduces development rework and sprint failures.",
+        timeBound: "Ongoing from Month 1; communication quality assessed at Month 3 retrospective; fully independent by Month 4.",
+        kpis: ["Stories blocked due to missing requirements (target: 0)", "Stakeholder response time (target: ≤1 business day)", "Ceremony attendance rate (target: 100%)"],
+        trackingTips: "Save email threads with PM and stakeholders; export ceremony attendance records; document scope risks communicated."
+      },
+      {
+        title: "Build Domain Knowledge & Requirement Traceability",
+        specific: "Build KPMG/project domain knowledge through required trainings and requirement discussions. Create and maintain Requirement Traceability Matrix (RTM) for assigned features. Script test cases using provided automation tool. Participate actively in refinement and grooming as the presenter of the team's ideas.",
+        measurable: "100% required trainings completed; RTM created and maintained for ≥80% of stories; actively presents in ≥3 grooming sessions per sprint; automation task scripted for ≥1 feature by Month 4.",
+        achievable: "Structured training plan and senior BA mentorship make this achievable.",
+        relevant: "Domain knowledge and RTM are baseline BA deliverables that ensure requirement quality and testability.",
+        timeBound: "Month 1–2: onboarding and training; Month 3: first independent RTM; Month 4–6: maintain and improve coverage.",
+        kpis: ["Training completion %", "RTM coverage rate (target: ≥80%)", "Grooming presentation count per sprint"],
+        trackingTips: "Save training certificates, RTM documents, and grooming meeting notes where you contributed."
+      },
+      {
+        title: "Team Contribution — Process Compliance & Winning Ways",
+        specific: "Follow all predefined BA/requirement processes. Prepare data for sprint, release, and quarterly reports. Maintain utilization ≥6.5 hrs/day. Participate in knowledge-sharing sessions (KPMG domain, BA practices, English). Support team activities and build collaborative relationships with dev and QA teams.",
+        measurable: "Utilization ≥6.5 hrs/day for ≥90% of days; reports delivered on time; 100% KS session attendance; positive 360 feedback from dev/QA teams.",
+        achievable: "Achievable with consistent daily habits and team accountability structures.",
+        relevant: "Utilization and process compliance are foundational Junior BA standards. Aligns to Winning Ways: Integrity (20%) and Collaboration (20%).",
+        timeBound: "Ongoing from Month 1; reviewed at Month 3 and Month 6.",
+        kpis: ["Daily utilization rate (target: ≥6.5hrs)", "Report on-time delivery rate", "KS sessions attended", "Team collaboration score"],
+        trackingTips: "Export timereg monthly; save report submissions; keep KS attendance records and 360 feedback."
+      },
+    ],
+
+    Senior: [
+      {
+        title: "Lead Requirement Discovery & Release Planning",
+        specific: "Collaborate with US PO/onsite and KMS team to finalize backlog for each release. Understand goals and problems of candidate epics. Work with teams to propose solutions with pros/cons. Have all epics estimated before release planning. Create parallel workstreams of large epics so multiple scrum teams can work without dependencies. Assist PM in release planning end-to-end.",
+        measurable: "100% candidate epics estimated before release planning; parallel workstreams designed for all epics >2 sprints; release backlog finalized 1 week before planning; zero epics blocked due to unclear requirements.",
+        achievable: "Senior BA with PM access and cross-team collaboration can manage this with structured planning rituals.",
+        relevant: "Core Senior BA responsibility — directly enables on-time release delivery and reduces scope uncertainty.",
+        timeBound: "Month 1: establish planning rhythm with PM; Month 2–3: lead first full release planning cycle; Month 4–6: sustain and improve.",
+        kpis: ["Epics estimated before planning (target: 100%)", "Parallel workstream design coverage", "Blocked epics due to requirements (target: 0)"],
+        trackingTips: "Save release planning docs, epic estimation records, workstream diagrams, and PM feedback emails."
+      },
+      {
+        title: "Strengthen Stakeholder Relationships & Negotiate Scope",
+        specific: "Be the presenter of the team's ideas to US PO and stakeholders. Facilitate stakeholder workshops and demos. Manage scope change requests — assess impact, communicate risks, and negotiate with PM. Coordinate with onsite without need for clarification or rework. Build relationships with both external (client) and internal stakeholders using soft skills and negotiation.",
+        measurable: "Zero rework requests from onsite on requirements; ≥2 stakeholder workshops facilitated; scope change impact communicated within 1 business day; stakeholder satisfaction score ≥4/5.",
+        achievable: "Achievable through structured workshop cadence and proactive PM communication.",
+        relevant: "Stakeholder management and negotiation are explicitly listed Senior BA responsibilities. Maps to Customer Focus Winning Way (20%).",
+        timeBound: "Month 1: establish stakeholder calendar; Month 2–4: run workshops; satisfaction survey at Month 3 and Month 6.",
+        kpis: ["Rework from onsite (target: 0)", "Workshops facilitated", "Scope change communication time (target: ≤1 day)", "Stakeholder satisfaction score"],
+        trackingTips: "Save workshop presentation decks, email threads on scope changes, and satisfaction survey results."
+      },
+      {
+        title: "Mentor Junior BAs & Define Team BA Standards",
+        specific: "Coach junior BA members on INVEST, backlog grooming, and stakeholder communication. Define and enforce BA standards: story templates, RTM format, workshop facilitation guides. Resolve team conflicts and support career development. Conduct ≥2 KS sessions on BA practices or domain knowledge.",
+        measurable: "Junior BA story rejection rate improves ≥30% within 3 months of coaching; ≥2 KS sessions delivered; BA standards document adopted by team; ≥1 junior BA independently running ceremonies by Month 5.",
+        achievable: "Achievable through structured 1:1 coaching and documented standards.",
+        relevant: "Leadership and mentoring are explicit Senior BA responsibilities per company PA framework. Aligns to Winning Ways: Collaboration (20%).",
+        timeBound: "Month 1: assess gaps; Month 2–3: coaching plan active; Month 3 & 5: KS sessions; Month 6: measure junior independence.",
+        kpis: ["Junior BA story rejection rate improvement", "KS sessions delivered (target: ≥2)", "Standards adoption rate", "Junior BA ceremony independence"],
+        trackingTips: "Save coaching session notes, KS decks, standards documents, and junior BA progress records."
+      },
+      {
+        title: "Company Contribution — Techcon, Training & Winning Ways",
+        specific: "Contribute to company activities: trainer for PO/BA program, Techcon presenter, or bid support. Model all 5 Winning Ways in daily interactions. Contribute ≥2 BA process improvement proposals per period. Provide data for sprint, release, and quarterly reports accurately and on time.",
+        measurable: "≥1 company activity contribution; ≥2 improvement proposals submitted; all reports delivered on time; peer Winning Ways score ≥4/5.",
+        achievable: "Company activity contribution and improvement proposals are realistic at Senior BA level with planning.",
+        relevant: "Company activities contribution is explicitly expected at Senior level. Aligns to Winning Ways — Continuous Improvement (20%) and Integrity (20%).",
+        timeBound: "Techcon/Training: target Month 3–5; improvement proposals quarterly; Winning Ways assessed at Month 6.",
+        kpis: ["Company activity contributions", "Improvement proposals accepted", "Report accuracy and timeliness", "Winning Ways peer score"],
+        trackingTips: "Save bid docs, Techcon decks, training materials, improvement proposals, and peer survey results."
+      },
+    ],
+
+    Principal: [
+      {
+        title: "Set BA/PO Chapter Standards & Drive Delivery Excellence",
+        specific: "Define BA/PO practice standards across teams: story templates, grooming standards, RTM methodology, DoR definitions, and sprint reporting formats. Own and improve the BA chapter practice. Ensure all teams follow INVEST and consistent backlog management practices.",
+        measurable: "Standards adopted by ≥2 teams; all new BA/PO hires onboarded using standard guides; story rejection rate reduced across teams; ≥1 standards review and update per quarter.",
+        achievable: "Principal BA has cross-team seniority and PM-level access to drive practice standards.",
+        relevant: "Core Principal-level contribution — multiplies BA quality and consistency across accounts.",
+        timeBound: "Month 1–2: audit current state; Month 3: publish standards v1; Month 4–6: rollout, validate adoption, and iterate.",
+        kpis: ["Teams adopting standards", "Story rejection rate trend (target: reduction)", "New BA onboarding time (target: reduction)", "Standards review cadence"],
+        trackingTips: "Save standards documents, adoption confirmations, story rejection trend data, and onboarding metrics."
+      },
+      {
+        title: "Lead Portfolio-Level Release Planning & Stakeholder Strategy",
+        specific: "Manage cross-program backlog and release planning. Create parallel workstreams across multiple scrum teams for large programs. Own stakeholder strategy for external (client) and internal stakeholders. Advise leadership on scope, risk, and roadmap trade-offs. Represent the team to executive-level stakeholders.",
+        measurable: "Portfolio release plan published and maintained; ≥2 major cross-team workstream designs delivered; executive stakeholder satisfaction score ≥4/5; zero major scope surprises reaching development without prior communication.",
+        achievable: "Principal BA has the authority and stakeholder access to operate at portfolio level.",
+        relevant: "Portfolio management and executive stakeholder alignment are core Principal BA responsibilities.",
+        timeBound: "Month 1: establish portfolio planning rhythm; Month 3: first full cross-team release plan; Month 4–6: sustain and optimize.",
+        kpis: ["Portfolio release plan accuracy", "Cross-team workstream designs delivered", "Executive stakeholder satisfaction score", "Scope surprise incidents (target: 0)"],
+        trackingTips: "Save portfolio planning docs, cross-team workstream diagrams, executive presentation materials, and stakeholder feedback."
+      },
+      {
+        title: "Build BA/PO Talent Pipeline & Domain Excellence",
+        specific: "Design and deliver BA/PO training programs. Mentor Senior BAs on stakeholder management and release planning skills. Develop domain excellence programs for key accounts (KPMG, Insurance, Financial Management domains). Lead KT framework for the BA chapter.",
+        measurable: "≥1 BA/PO training program delivered; ≥2 Senior BAs in mentorship; domain excellence program active for ≥1 account; KT guide published.",
+        achievable: "Principal BA owns talent development — time allocation exists at this level.",
+        relevant: "Talent development and domain excellence are explicitly listed goals in the company PA framework for Principal level.",
+        timeBound: "Month 1–2: assess and design; Month 3–4: launch; Month 5–6: measure impact.",
+        kpis: ["Training programs delivered", "Senior BA mentees count", "Domain excellence program adoption", "KT guide published"],
+        trackingTips: "Save training materials, mentoring notes, domain program docs, and KT guide version history."
+      },
+      {
+        title: "Company Leadership — CoE, Bidding & Techcon",
+        specific: "Establish or contribute to a BA Center of Excellence (CoE) — define methodologies, run communities of practice, and publish thought leadership. Contribute to ≥1 project bid as BA SME. Present at Techcon or equivalent event. Sponsor company-wide culture and continuous improvement initiatives.",
+        measurable: "CoE initiative launched or ≥2 CoE contributions; ≥1 bid contribution; ≥1 Techcon presentation rated ≥4/5; ≥1 company culture initiative sponsored.",
+        achievable: "Principal BA is expected to operate at company level — these are explicitly listed company activity expectations.",
+        relevant: "CoE building and external contribution are Principal-level responsibilities in the PA framework.",
+        timeBound: "CoE: Month 1–3 initiate; Techcon: Month 3–5; Bidding: opportunistic; Culture: Month 1–6.",
+        kpis: ["CoE contributions", "Bids contributed", "Techcon presentations rated", "Culture initiatives sponsored"],
+        trackingTips: "Save CoE methodology documents, bid sections, Techcon decks, and culture initiative plans."
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  Manager: {
+    Junior: [
+      {
+        title: "Lead Scrum Ceremonies & Team Delivery Cadence",
+        specific: "Facilitate all sprint activities (refinement, planning, review/demo, retro, daily stand-up). Coach team on Scrum principles and best practices. Remove impediments proactively. Maintain sprint tracking in project management tool with risk log. Ensure team burns down daily and meets sprint commitments.",
+        measurable: "100% sprint ceremonies run on schedule; sprint completion rate ≥85%; impediments resolved within 2 business days; risk log updated weekly.",
+        achievable: "Junior Manager with SM/PM training and Scrum framework access can build this cadence within 2 months.",
+        relevant: "Running scrum ceremonies and sprint delivery cadence are the primary Junior EM/SM responsibilities per PA framework.",
+        timeBound: "Month 1: establish ceremony calendar; Month 2–3: run independently; Month 4–6: improve sprint completion rate.",
+        kpis: ["Sprint ceremony completion rate (target: 100%)", "Sprint completion rate (target: ≥85%)", "Impediment resolution time (target: ≤2 days)", "Risk log update frequency"],
+        trackingTips: "Save ceremony agendas and outcomes; export sprint metrics from Jira/Azure; keep risk log records."
+      },
+      {
+        title: "People Management — 1:1s, Coaching & Conflict Resolution",
+        specific: "Conduct regular 1:1s with all team members. Coach individuals on performance, process adherence, and growth. Resolve team conflicts fairly and promptly. Support team members with goal setting and career development. Create Individual Development Plans (IDPs) for all direct reports.",
+        measurable: "100% team members have active IDPs by Month 2; 1:1s conducted ≥2x per month per person; zero unresolved conflicts >5 days; team satisfaction score ≥4/5 at Month 6.",
+        achievable: "Structured 1:1 cadence and IDP template make this manageable for a Junior Manager.",
+        relevant: "People management is the core EM responsibility — directly impacts team performance, retention, and morale.",
+        timeBound: "Month 1: establish 1:1 rhythm; Month 2: IDPs created; Month 3: mid-point check; Month 6: full review.",
+        kpis: ["IDP completion rate (target: 100%)", "1:1 frequency compliance", "Conflict resolution time (target: ≤5 days)", "Team satisfaction score"],
+        trackingTips: "Save 1:1 notes, IDP documents, conflict resolution records, and team satisfaction survey results."
+      },
+      {
+        title: "Improve Project Productivity & Stakeholder Communication",
+        specific: "Track and improve team productivity metrics (velocity, utilization, burn-down). Provide data for sprint, release, and quarterly reports accurately and on time. Manage stakeholder expectations through transparent communication — increase transparency and build stakeholder confidence. Coordinate with external and internal stakeholders using soft skills and negotiation.",
+        measurable: "Sprint reports delivered on time every cycle; team utilization ≥6.5 hrs/day; velocity improvement trend over 6 months; stakeholder satisfaction score ≥4/5.",
+        achievable: "Achievable with structured reporting cadence and regular stakeholder syncs.",
+        relevant: "Productivity management and stakeholder communication are core EM/SM delivery responsibilities per PA framework.",
+        timeBound: "Month 1: establish reporting templates; Month 2–3: first full reporting cycle; Month 4–6: improve quality and stakeholder score.",
+        kpis: ["Report on-time delivery rate", "Team utilization rate", "Velocity trend (target: stable or improving)", "Stakeholder satisfaction score"],
+        trackingTips: "Save sprint reports, velocity charts, stakeholder communication threads, and satisfaction survey results."
+      },
+      {
+        title: "Team Culture — Winning Ways & Company Activities",
+        specific: "Model and reinforce all 5 Winning Ways behaviors (Integrity, Agility, Collaboration, Customer Focus, Continuous Improvement) in team rituals. Run ≥2 team culture/engagement initiatives. Support company activities: trainer for any program, Techcon presenter, or bid support. Participate in Manager meetups.",
+        measurable: "≥2 culture initiatives run; Winning Ways peer assessment score ≥4/5; ≥1 company activity contribution; attendance at all Manager meetups.",
+        achievable: "Culture initiatives can be lightweight — retros, team challenges, or recognition programs — and fit within team rituals.",
+        relevant: "Winning Ways are company-wide behaviors weighted at 20% each in PA framework. Company activity contribution is expected at all management levels.",
+        timeBound: "Month 1: define culture calendar; Month 2 & 5: run initiatives; company activity: target Month 3–5.",
+        kpis: ["Culture initiatives run (target: ≥2)", "Winning Ways peer score (target: ≥4/5)", "Company activity contributions", "Manager meetup attendance"],
+        trackingTips: "Save culture initiative plans, retro outputs, Techcon/training materials, and peer survey results."
+      },
+    ],
+
+    Senior: [
+      {
+        title: "Drive Team Delivery Performance & QBR Achievement",
+        specific: "Own end-to-end team delivery: define sprint goals aligned to QBR objectives, monitor productivity (velocity, utilization, burn-down), remove blockers, and report to leadership. Coordinate effectively with onsite lead without clarification or rework. Sense risks, develop mitigation plans, and escalate proactively.",
+        measurable: "Sprint completion rate ≥85% for ≥4 of 6 months; QBR goals met at Month 3 and Month 6 review; zero unaddressed escalations; zero rework requests from onsite lead.",
+        achievable: "Senior EM with team access, project tool visibility, and leadership support can own this delivery accountability.",
+        relevant: "Delivery performance and QBR achievement are the primary Senior EM accountability — directly impacts client satisfaction.",
+        timeBound: "Month 1: baseline current metrics; Month 3: first QBR review; Month 4–6: improve and sustain.",
+        kpis: ["Sprint completion rate (target: ≥85%)", "QBR goal completion rate", "Rework requests from onsite (target: 0)", "Risk escalations count"],
+        trackingTips: "Export sprint metrics, save QBR review documents, risk log, and onsite communication threads."
+      },
+      {
+        title: "Grow Team Capability & Career Development",
+        specific: "Ensure all team members have active IDPs aligned to career goals. Run regular 1:1s, set performance goals, and provide honest, actionable feedback. Identify future leads and put them on a development track. Resolve team conflicts promptly. Coach members on Scrum, delivery practices, and professional skills.",
+        measurable: "100% team members have active IDPs; 1:1s ≥2x/month; ≥1 team member identified and actively developed as future lead; zero unresolved conflicts >5 days; engagement score ≥4/5.",
+        achievable: "Structured IDP and 1:1 process with HR support makes this achievable.",
+        relevant: "People development is the core Senior EM leadership responsibility. Maps to People Management in company PA framework.",
+        timeBound: "Month 1: baseline IDPs; Month 3: mid-period check; Month 6: full review and next-cycle planning.",
+        kpis: ["IDP completion rate (target: 100%)", "Future leads identified and in development", "Conflict resolution time (target: ≤5 days)", "Team engagement score"],
+        trackingTips: "Save 1:1 notes, IDP docs, engagement survey results, and conflict resolution records."
+      },
+      {
+        title: "Shape Team Culture & Winning Ways",
+        specific: "Model and reinforce all 5 Winning Ways behaviors in team rituals, feedback, and recognition. Run ≥2 team culture initiatives per period (retros, challenges, recognition programs). Facilitate open discussion and healthy conflict resolution. Drive Continuous Improvement — propose and implement ≥2 process improvements.",
+        measurable: "≥2 culture initiatives run; ≥2 process improvements implemented; Winning Ways peer assessment score ≥4/5; ≥1 team recognition event per month.",
+        achievable: "Culture initiatives can be lightweight and built into existing sprint rituals.",
+        relevant: "Winning Ways are company-wide behaviors weighted at 20% each in the PA framework — Senior EM is a key multiplier.",
+        timeBound: "Month 1: define culture calendar; Month 2 & 5: run initiatives; process improvements: one per 3 months.",
+        kpis: ["Culture initiatives run (target: ≥2)", "Process improvements implemented (target: ≥2)", "Winning Ways peer score", "Recognition events run"],
+        trackingTips: "Save initiative plans, retro outputs, improvement proposals, recognition records, and peer assessment results."
+      },
+      {
+        title: "Knowledge Sharing, Techcon & Company Activities",
+        specific: "Conduct ≥2 KS sessions for the team (technical, domain, or English). Represent team or company at Techcon or Manager meetup with positive outcome. Contribute to bidding or company program as trainer. Provide data for sprint, release, and quarterly reports accurately and on time.",
+        measurable: "≥2 KS sessions delivered; ≥1 company activity contribution rated ≥4/5; all reports on time; Manager meetup attendance 100%.",
+        achievable: "One KS per quarter and one external contribution are realistic at Senior Manager level.",
+        relevant: "Company activities and KS are explicitly expected at Senior Manager level per PA framework.",
+        timeBound: "KS: Month 2 & 5; Techcon/Training: Month 3–5; Reporting: ongoing.",
+        kpis: ["KS sessions delivered", "Company activity contributions", "Presentation outcome rating", "Report on-time delivery rate"],
+        trackingTips: "Save KS decks, Techcon materials, report submissions, and meetup attendance records."
+      },
+    ],
+
+    Principal: [
+      {
+        title: "Set Organizational Vision & 6-Month Delivery Strategy",
+        specific: "Define and communicate a clear 6-month strategy for the team/department aligned to company OKRs and QBR goals. Translate company strategy into team-level execution plans with measurable milestones. Publish strategy by Month 1 and review at Month 3 and Month 6.",
+        measurable: "Strategy document published by Month 1; all team goals aligned to company OKRs; ≥80% of milestones met at Month 3 review; leadership buy-in confirmed.",
+        achievable: "Principal Manager has the authority, context, and leadership relationships to set and drive direction.",
+        relevant: "Vision and strategy setting is the primary Principal Manager responsibility — enables all other team goals.",
+        timeBound: "Month 1: publish strategy; Month 3: mid-point review and adjust; Month 6: final review and next-cycle planning.",
+        kpis: ["Strategy document published on time", "OKR alignment rate (target: 100%)", "Milestone completion rate at Month 3 (target: ≥80%)", "Leadership satisfaction score"],
+        trackingTips: "Save strategy documents, OKR tracking sheets, milestone review notes, and leadership presentation materials."
+      },
+      {
+        title: "Build Organizational Capability & Succession Pipeline",
+        specific: "Design and implement a talent development program for the department. Identify and develop Senior Managers/Leads for succession. Establish structured mentoring program. Contribute to hiring standards. Define career ladders and growth paths for all roles under your leadership.",
+        measurable: "≥3 Senior Managers/Leads in active development plans; succession map documented by Month 2; ≥1 talent development program launched; internal promotion rate improves.",
+        achievable: "Principal Manager has HR partnership and budget for talent development at this level.",
+        relevant: "Succession planning and talent pipeline are Principal-level responsibilities — directly impacts organizational resilience.",
+        timeBound: "Month 1–2: assess and plan; Month 3: launch program; Month 4–6: execute, measure, and iterate.",
+        kpis: ["People in active development plans (target: ≥3)", "Succession map completeness", "Internal promotion rate", "Talent program feedback score"],
+        trackingTips: "Save succession map, development plans, mentoring logs, career ladder docs, and internal promotion data."
+      },
+      {
+        title: "Drive Operational Excellence & Cross-Team Alignment",
+        specific: "Identify and eliminate process bottlenecks across teams. Establish shared standards for delivery, reporting, and quality across all reporting teams. Lead cross-team alignment forums, resolve inter-team dependencies, and monitor QBR achievement organization-wide. Follow and monitor team productivity against targets.",
+        measurable: "≥2 cross-team process improvements implemented; dependency resolution time reduced by ≥25%; shared standards adopted by all reporting teams; QBR goal achievement ≥80% across teams.",
+        achievable: "Principal Manager has the cross-team visibility and authority to drive operational improvements.",
+        relevant: "Operational leverage across teams is the core Principal Manager value — multiplies delivery impact.",
+        timeBound: "Month 1: map bottlenecks; Month 2–3: propose and implement improvements; Month 4–6: measure impact and sustain.",
+        kpis: ["Process improvements implemented (target: ≥2)", "Dependency resolution time (target: ≥25% reduction)", "Standards adoption rate (target: 100%)", "QBR achievement rate across teams"],
+        trackingTips: "Save process maps, improvement proposals, alignment meeting notes, dependency logs, and QBR tracking sheets."
+      },
+      {
+        title: "Company Leadership — Executive Presence, Bidding & Culture",
+        specific: "Represent the company in ≥1 client bid or external event as a senior leader. Present at executive forums, Techcon, or Manager meetup. Drive company culture initiatives beyond the immediate team. Be a trainer for leadership or management programs. Build relationships with executive stakeholders.",
+        measurable: "≥1 bid or external event represented; ≥1 executive presentation with positive outcome; ≥1 company-wide culture initiative sponsored; training program delivered with ≥4/5 feedback.",
+        achievable: "Principal Manager operates at company level — these are explicitly expected company-level activities.",
+        relevant: "External representation, culture leadership, and executive presence are Principal-level expectations per PA framework.",
+        timeBound: "Bids: opportunistic; Executive presentations: Month 3–4; Culture initiative: Month 1–6; Training program: Month 2–5.",
+        kpis: ["External engagements count", "Executive presentations rated", "Culture initiatives sponsored", "Training program feedback score"],
+        trackingTips: "Save bid documents, executive presentation materials, initiative plans, training decks, and outcome feedback."
+      },
+    ],
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// PERSONA ROTATION: each persona number offsets goal selection
+// so the same role/level gives 5 different goal combinations
+// ─────────────────────────────────────────────────────────────
+function buildOfflineGoals(role, level, persona, expectations) {
+  const roleKey = { QA:'QA', DEV:'DEV', BA:'BA', Manager:'Manager' }[role] || 'DEV';
+  const levelKey = { Junior:'Junior', Senior:'Senior', Principal:'Principal' }[level] || 'Junior';
+
+  const bank = GOAL_BANK[roleKey]?.[levelKey] || GOAL_BANK['DEV']['Junior'];
+
+  // Persona 1–5 rotates which combination of 4 goals is shown
+  const p = (parseInt(persona) || 1) - 1; // 0-indexed offset
+  const total = bank.length; // always 4 in each bank
+  const indices = [0, 1, 2, 3].map(i => (i + p) % total);
+  let selected = indices.map(i => bank[i]);
+
+  // Weave in the stated expectations: annotate Goal 1's relevant field
+  const exp = (expectations || '').trim();
+  selected = selected.map((g, i) => ({
+    ...g,
+    id: i + 1,
+    relevant: i === 0 && exp
+      ? `${g.relevant} — Manager expectation this period: "${exp.slice(0, 100)}${exp.length > 100 ? '…' : ''}"`
+      : g.relevant,
+  }));
+
+  return selected;
+}
+
+// ===================== RENDER GOALS =====================
+function renderGoals() {
+  const container = document.getElementById('goals-list');
+  const e = state.employee;
+
+  // Profile badge
+  const initials = e.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || 'AP';
+  document.getElementById('profile-badge').innerHTML = `
+    <div class="avatar">${initials}</div>
+    <div class="profile-info">
+      <div class="profile-name">${e.name}</div>
+      <div class="profile-role">${e.level} ${e.role}${e.persona ? ' · ' + e.persona : ''}</div>
+    </div>
+  `;
+
+  container.innerHTML = state.goals.map((g, i) => `
+    <div class="goal-card" id="gcard-${i}" onclick="toggleGoal(${i})">
+      <div class="goal-card-header">
+        <div class="goal-number">G${i+1}</div>
+        <div class="goal-title-wrap">
+          <div class="goal-title">${g.title}</div>
+          <div class="goal-meta">
+            <span class="tag tag-s">Specific</span>
+            <span class="tag tag-m">Measurable</span>
+            <span class="tag tag-a">Achievable</span>
+            <span class="tag tag-r">Relevant</span>
+            <span class="tag tag-t">Time-Bound</span>
+          </div>
+        </div>
+        <div class="goal-chevron">▼</div>
+      </div>
+      <div class="goal-body">
+        <div class="smart-grid">
+          <div class="smart-pill"><div class="smart-pill-label">S — Specific</div><div class="smart-pill-value">${g.specific}</div></div>
+          <div class="smart-pill"><div class="smart-pill-label">M — Measurable</div><div class="smart-pill-value">${g.measurable}</div></div>
+          <div class="smart-pill"><div class="smart-pill-label">A — Achievable</div><div class="smart-pill-value">${g.achievable}</div></div>
+          <div class="smart-pill"><div class="smart-pill-label">R — Relevant</div><div class="smart-pill-value">${g.relevant}</div></div>
+          <div class="smart-pill"><div class="smart-pill-label">T — Time-Bound</div><div class="smart-pill-value">${g.timeBound}</div></div>
+        </div>
+        <div style="margin-bottom:8px;font-size:0.78rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Key Performance Indicators</div>
+        <div class="kpi-list">
+          ${(g.kpis||[]).map((k,ki) => `
+            <div class="kpi-item">
+              <div class="kpi-check" id="kpi-${i}-${ki}" onclick="event.stopPropagation();toggleKpi(${i},${ki})"></div>
+              <span>${k}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:4px;text-transform:uppercase;">📎 Tracking Tips</div>
+          <div style="font-size:0.82rem;color:var(--muted);">${g.trackingTips}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleGoal(i) {
+  document.getElementById('gcard-' + i).classList.toggle('expanded');
+}
+
+function toggleKpi(gi, ki) {
+  const el = document.getElementById(`kpi-${gi}-${ki}`);
+  el.classList.toggle('checked');
+}
+
+// ===================== TRACKER =====================
+function renderTracker() {
+  renderProgress();
+  renderTimeline();
+  renderGoalSelect();
+  renderEvidenceLog();
+}
+
+function renderProgress() {
+  const total = state.evidence.length;
+  const goals = state.goals.length;
+  const months = [...new Set(state.evidence.map(e => e.month))].length;
+
+  document.getElementById('progress-cards').innerHTML = `
+    <div class="prog-card">
+      <div class="prog-label">Evidence Logged</div>
+      <div class="prog-value">${total}</div>
+      <div class="prog-sub">across ${months} month${months !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-label">Goals Covered</div>
+      <div class="prog-value">${Math.min([...new Set(state.evidence.map(e => e.goalId))].length, goals)}/${goals}</div>
+      <div class="prog-sub">goals have evidence</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-label">Completion Estimate</div>
+      <div class="prog-value">${Math.min(Math.round((total / Math.max(goals * 3, 1)) * 100), 100)}%</div>
+      <div class="prog-sub">target: 3+ per goal</div>
+    </div>
+  `;
+}
+
+function renderTimeline() {
+  const months = ['Month 1','Month 2','Month 3','Month 4','Month 5','Month 6'];
+  const strip = document.getElementById('timeline-strip');
+
+  strip.innerHTML = months.map((m, i) => {
+    const count = state.evidence.filter(e => e.month === i+1).length;
+    const pct = Math.min(count * 25, 100);
+    return `
+      <div class="month-block ${state.activeMonth === i+1 ? 'active' : ''}" onclick="setActiveMonth(${i+1})">
+        <div class="month-label">${m}</div>
+        <div class="evidence-count">${count}</div>
+        <div class="month-progress"><div class="month-progress-fill" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setActiveMonth(m) {
+  state.activeMonth = m;
+  renderTracker();
+  document.getElementById('ev-month-select').value = `Month ${m}`;
+}
+
+function renderGoalSelect() {
+  const sel = document.getElementById('ev-goal-select');
+  sel.innerHTML = state.goals.map((g,i) => `<option value="${i}">G${i+1}: ${g.title.slice(0,40)}...</option>`).join('');
+}
+
+function renderEvidenceLog() {
+  const log = document.getElementById('evidence-log');
+
+  if (state.evidence.length === 0) {
+    log.innerHTML = `<div class="evidence-section"><div class="empty-state"><div class="icon">📋</div><p>No evidence logged yet. Add your first entry above.</p></div></div>`;
+    return;
+  }
+
+  // Group by goal
+  const byGoal = {};
+  state.evidence.forEach(ev => {
+    if (!byGoal[ev.goalId]) byGoal[ev.goalId] = [];
+    byGoal[ev.goalId].push(ev);
+  });
+
+  log.innerHTML = Object.entries(byGoal).map(([gid, evs]) => {
+    const goal = state.goals[parseInt(gid)];
+    if (!goal) return '';
+    return `
+      <div class="evidence-section">
+        <div class="evidence-section-header">
+          <div class="evidence-section-title">G${parseInt(gid)+1}: ${goal.title}</div>
+          <span style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);">${evs.length} evidence item${evs.length!==1?'s':''}</span>
+        </div>
+        <div class="evidence-list">
+          ${evs.map(ev => `
+            <div class="evidence-item">
+              <div class="ev-icon">${ev.type}</div>
+              <div class="ev-content">
+                <div class="ev-text">${ev.description}</div>
+                <div class="ev-meta">
+                  <span>Month ${ev.month}</span>
+                  <span>·</span>
+                  <span>${ev.date}</span>
+                  <span class="ev-goal-tag">G${parseInt(gid)+1}</span>
+                </div>
+              </div>
+              <button class="ev-delete" onclick="deleteEvidence('${ev.id}')" title="Delete">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectEvType(btn, type) {
+  document.querySelectorAll('.ev-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.currentEvType = type;
+}
+
+function addEvidence() {
+  const desc = document.getElementById('ev-description').value.trim();
+  const goalIdx = document.getElementById('ev-goal-select').value;
+  const monthStr = document.getElementById('ev-month-select').value;
+  const month = parseInt(monthStr.replace('Month ', ''));
+
+  if (!desc) { showToast('Please enter an evidence description.'); return; }
+
+  const ev = {
+    id: Date.now().toString(),
+    type: state.currentEvType,
+    description: desc,
+    goalId: parseInt(goalIdx),
+    month,
+    date: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }),
+  };
+
+  state.evidence.push(ev);
+  document.getElementById('ev-description').value = '';
+  renderTracker();
+  showToast('Evidence added successfully!');
+}
+
+function deleteEvidence(id) {
+  state.evidence = state.evidence.filter(e => e.id !== id);
+  renderTracker();
+  showToast('Evidence removed.');
+}
+
+// ===================== PERSONA SYSTEM =====================
+function updatePersonas() {
+  const role = document.getElementById('emp-role').value;
+  const level = document.getElementById('emp-level').value;
+  const wrap = document.getElementById('persona-pills');
+
+  if (!role || !level) {
+    wrap.innerHTML = '<span style="font-size:0.8rem;color:var(--muted);">Select level & role first...</span>';
+    return;
+  }
+
+  wrap.innerHTML = [1,2,3,4,5].map(n => `
+    <button class="persona-pill" data-num="${n}" onclick="selectPersona(this)">${n}</button>
+  `).join('');
+}
+
+function selectPersona(btn) {
+  document.querySelectorAll('.persona-pill').forEach(p => p.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function togglePersonaField() {
+  const wrap = document.getElementById('persona-field-wrap');
+  const btn = document.getElementById('persona-toggle-btn');
+  const icon = document.getElementById('persona-toggle-icon');
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  btn.classList.toggle('open', !isOpen);
+  icon.textContent = isOpen ? '＋' : '－';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('emp-role').addEventListener('change', updatePersonas);
+  document.getElementById('emp-level').addEventListener('change', updatePersonas);
+});
+
+// ===================== UTILS =====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init dates
+(function() {
+  const today = new Date();
+  const end = new Date();
+  end.setMonth(end.getMonth() + 6);
+  document.getElementById('period-start').value = today.toISOString().split('T')[0];
+  document.getElementById('period-end').value = end.toISOString().split('T')[0];
+})();
+</script>
+</body>
+</html>
