@@ -227,7 +227,10 @@ textarea{resize:vertical;min-height:90px;line-height:1.5;}
         <div class="section-title">Team Appraisals</div>
         <div class="section-subtitle">All saved profiles. Click a name to open their goals and tracker.</div>
       </div>
-      <button class="btn btn-primary" onclick="newPerson()">＋ New Person</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="exportToExcel()">⬇ Download Excel</button>
+        <button class="btn btn-primary" onclick="newPerson()">＋ New Person</button>
+      </div>
     </div>
     <div id="people-list-container"></div>
   </div>
@@ -1870,4 +1873,241 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start on people list
   switchTab('people');
 });
+
+// ===================== EXCEL EXPORT =====================
+function exportToExcel() {
+  if (!db.length) { showToast('No saved people to export.'); return; }
+
+  // Load SheetJS dynamically
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = () => buildExcel();
+  script.onerror = () => showToast('Failed to load Excel library. Check internet connection.');
+  document.head.appendChild(script);
+}
+
+function buildExcel() {
+  const wb = XLSX.utils.book_new();
+
+  const C = {
+    HEADER_BG: 'FF16181F', ACCENT: 'FF6EE7B7', ACCENT2: 'FF818CF8',
+    ACCENT3: 'FFF59E0B', DANGER: 'FFF87171', WHITE: 'FFE8EAF0',
+    MUTED: 'FF6B7280', CARD: 'FF1A1C25', SURFACE: 'FF16181F',
+    GREEN_FILL: 'FF0D2B1F', PURPLE_FILL: 'FF141228', AMBER_FILL: 'FF2B1F06',
+    ALT_ROW: 'FF161820', BORDER: 'FF2A2D3A',
+  };
+
+  function hdr(txt, color, bg, sz, bold) {
+    return { v: txt, t: 's', s: {
+      font: { name:'Arial', sz: sz||10, bold: bold!==false, color: { rgb: color||C.WHITE } },
+      fill: { fgColor: { rgb: bg||C.HEADER_BG }, patternType:'solid' },
+      alignment: { horizontal:'left', vertical:'center', wrapText: true },
+      border: { bottom: { style:'thin', color:{ rgb: C.BORDER } } },
+    }};
+  }
+
+  function cell(txt, color, bg, sz, bold, wrap, align) {
+    return { v: txt||'', t: 's', s: {
+      font: { name:'Arial', sz: sz||9, bold: !!bold, color: { rgb: color||C.WHITE } },
+      fill: { fgColor: { rgb: bg||C.CARD }, patternType:'solid' },
+      alignment: { horizontal: align||'left', vertical:'center', wrapText: !!wrap },
+    }};
+  }
+
+  function numCell(v, color, bg) {
+    return { v: v||0, t: 'n', s: {
+      font: { name:'Arial', sz:9, color:{ rgb: color||C.WHITE } },
+      fill: { fgColor:{ rgb: bg||C.CARD }, patternType:'solid' },
+      alignment: { horizontal:'center', vertical:'center' },
+    }};
+  }
+
+  db.forEach(person => {
+    const e = person.employee || {};
+    const goals = person.goals || [];
+    const evidence = person.evidence || [];
+    const sheetName = (e.name || 'Person').replace(/[:\\\/\?\*\[\]]/g,'').slice(0,31);
+
+    const rows = [];
+
+    // ── Banner ──────────────────────────────────────────────
+    rows.push([
+      hdr('PERFPATH  —  PERFORMANCE APPRAISAL', C.ACCENT, C.HEADER_BG, 13),
+      null, null, null, null, null, null
+    ]);
+    rows.push([
+      hdr('6-Month Appraisal Period  ·  SMART Goal Tracker & Evidence Log', C.MUTED, C.HEADER_BG, 9, false),
+      null, null, null, null, null, null
+    ]);
+    rows.push([]);
+
+    // ── Profile ──────────────────────────────────────────────
+    rows.push([ hdr('EMPLOYEE PROFILE', C.ACCENT, C.GREEN_FILL, 9) ]);
+    const profile = [
+      ['Full Name', e.name||''],
+      ['Role', e.role||''],
+      ['Level', e.level||''],
+      ['Period Start', e.start||''],
+      ['Period End', e.end||''],
+      ['Expectations', e.expectations||''],
+    ];
+    profile.forEach(([lbl, val]) => {
+      rows.push([
+        cell(lbl, C.MUTED, C.SURFACE, 9),
+        cell(val, C.WHITE, C.CARD, 9, true, true),
+        null, null, null, null, null,
+      ]);
+    });
+    rows.push([]);
+
+    // ── Goals ────────────────────────────────────────────────
+    rows.push([ hdr('SMART GOALS', C.ACCENT2, C.PURPLE_FILL, 9) ]);
+    rows.push([
+      hdr('#',         C.WHITE, C.HEADER_BG, 9),
+      hdr('Goal Title',C.WHITE, C.HEADER_BG, 9),
+      hdr('Specific',  C.WHITE, C.HEADER_BG, 9),
+      hdr('Measurable',C.WHITE, C.HEADER_BG, 9),
+      hdr('Achievable',C.WHITE, C.HEADER_BG, 9),
+      hdr('Relevant',  C.WHITE, C.HEADER_BG, 9),
+      hdr('Time-Bound',C.WHITE, C.HEADER_BG, 9),
+    ]);
+    goals.forEach((g, i) => {
+      const bg = i % 2 === 0 ? C.CARD : C.ALT_ROW;
+      rows.push([
+        cell(`G${i+1}`, C.ACCENT, bg, 10, true, false, 'center'),
+        cell(g.title||'',     C.WHITE, bg, 9, true,  true),
+        cell(g.specific||'',  C.WHITE, bg, 9, false, true),
+        cell(g.measurable||'',C.WHITE, bg, 9, false, true),
+        cell(g.achievable||'',C.WHITE, bg, 9, false, true),
+        cell(g.relevant||'',  C.WHITE, bg, 9, false, true),
+        cell(g.timeBound||'', C.WHITE, bg, 9, false, true),
+      ]);
+    });
+    rows.push([]);
+
+    // ── KPIs ────────────────────────────────────────────────
+    rows.push([ hdr('KEY PERFORMANCE INDICATORS', C.ACCENT3, C.AMBER_FILL, 9) ]);
+    rows.push([
+      hdr('Goal',       C.WHITE, C.HEADER_BG, 9),
+      hdr('KPI',        C.WHITE, C.HEADER_BG, 9),
+      null, null, null, null, null,
+    ]);
+    goals.forEach((g, i) => {
+      const bg = i % 2 === 0 ? C.CARD : C.ALT_ROW;
+      (g.kpis || []).forEach((kpi, ki) => {
+        rows.push([
+          cell(ki === 0 ? `G${i+1}` : '', C.ACCENT, bg, 9, true, false, 'center'),
+          cell(kpi, C.WHITE, bg, 9, false, true),
+          null, null, null, null, null,
+        ]);
+      });
+    });
+    rows.push([]);
+
+    // ── Evidence ─────────────────────────────────────────────
+    rows.push([ hdr('EVIDENCE LOG', C.ACCENT2, C.PURPLE_FILL, 9) ]);
+    rows.push([
+      hdr('Month',      C.WHITE, C.HEADER_BG, 9),
+      hdr('Date',       C.WHITE, C.HEADER_BG, 9),
+      hdr('Goal',       C.WHITE, C.HEADER_BG, 9),
+      hdr('Type',       C.WHITE, C.HEADER_BG, 9),
+      hdr('Evidence Description', C.WHITE, C.HEADER_BG, 9),
+      null, null,
+    ]);
+
+    if (!evidence.length) {
+      rows.push([ cell('No evidence logged yet.', C.MUTED, C.CARD, 9, false, false, 'center') ]);
+    } else {
+      evidence.forEach((ev, i) => {
+        const bg = i % 2 === 0 ? C.CARD : C.ALT_ROW;
+        const goalNum = ev.goalId !== undefined ? `G${ev.goalId + 1}` : '—';
+        rows.push([
+          cell(`Month ${ev.month}`, C.WHITE,  bg, 9, false, false, 'center'),
+          cell(ev.date||'',         C.MUTED,  bg, 9, false, false, 'center'),
+          cell(goalNum,             C.ACCENT, bg, 9, true,  false, 'center'),
+          cell(ev.type||'',         C.WHITE,  bg, 9, false, false, 'center'),
+          cell(ev.description||'',  C.WHITE,  bg, 9, false, true),
+          null, null,
+        ]);
+      });
+    }
+    rows.push([]);
+
+    // ── Summary ──────────────────────────────────────────────
+    rows.push([ hdr('SUMMARY', C.ACCENT3, C.AMBER_FILL, 9) ]);
+    const goalsWithEvidence = [...new Set(evidence.map(ev => ev.goalId))].length;
+    const monthsActive = [...new Set(evidence.map(ev => ev.month))].length;
+    [
+      ['Total Evidence Items', evidence.length],
+      ['Goals with Evidence',  `${goalsWithEvidence} / ${goals.length}`],
+      ['Months Active',        `${monthsActive} / 6`],
+      ['Completion Estimate',  `${Math.min(Math.round(evidence.length / Math.max(goals.length * 3, 1) * 100), 100)}%`],
+    ].forEach(([lbl, val]) => {
+      rows.push([
+        cell(lbl, C.MUTED, C.SURFACE, 9),
+        cell(String(val), C.ACCENT3, C.CARD, 10, true),
+        null, null, null, null, null,
+      ]);
+    });
+
+    // ── Build sheet ──────────────────────────────────────────
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [
+      {wch:12}, {wch:28}, {wch:36}, {wch:36}, {wch:28}, {wch:28}, {wch:28}
+    ];
+
+    // Merge banner rows across all 7 cols
+    ws['!merges'] = [
+      {s:{r:0,c:0}, e:{r:0,c:6}},
+      {s:{r:1,c:0}, e:{r:1,c:6}},
+    ];
+
+    // Row heights — taller for data rows
+    ws['!rows'] = rows.map((_, i) => ({ hpt: i < 3 ? 28 : 48 }));
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  // Add a cover summary sheet
+  const coverRows = [];
+  coverRows.push([ hdr('PERFPATH — TEAM APPRAISAL SUMMARY', 'FF6EE7B7', 'FF16181F', 13) ]);
+  coverRows.push([ hdr(`Exported: ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}`, 'FF6B7280', 'FF16181F', 9, false) ]);
+  coverRows.push([]);
+  coverRows.push([
+    hdr('Name',     'FFE8EAF0', 'FF16181F', 9),
+    hdr('Role',     'FFE8EAF0', 'FF16181F', 9),
+    hdr('Level',    'FFE8EAF0', 'FF16181F', 9),
+    hdr('Goals',    'FFE8EAF0', 'FF16181F', 9),
+    hdr('Evidence', 'FFE8EAF0', 'FF16181F', 9),
+    hdr('Period',   'FFE8EAF0', 'FF16181F', 9),
+  ]);
+  db.forEach((p, i) => {
+    const e = p.employee || {};
+    const bg = i % 2 === 0 ? 'FF1A1C25' : 'FF161820';
+    coverRows.push([
+      cell(e.name||'', 'FFE8EAF0', bg, 9, true),
+      cell(e.role||'', 'FF6EE7B7', bg, 9),
+      cell(e.level||'','FF818CF8', bg, 9),
+      cell(String((p.goals||[]).length), 'FFE8EAF0', bg, 9, false, false, 'center'),
+      cell(String((p.evidence||[]).length),'FFE8EAF0',bg, 9, false, false, 'center'),
+      cell(`${e.start||''} → ${e.end||''}`, 'FF6B7280', bg, 9),
+    ]);
+  });
+
+  const coverWs = XLSX.utils.aoa_to_sheet(coverRows);
+  coverWs['!cols'] = [{wch:24},{wch:14},{wch:14},{wch:8},{wch:10},{wch:24}];
+  coverWs['!merges'] = [
+    {s:{r:0,c:0},e:{r:0,c:5}},
+    {s:{r:1,c:0},e:{r:1,c:5}},
+  ];
+  XLSX.utils.book_append_sheet(wb, coverWs, '📊 Summary', true);
+
+  // Move Summary to first position
+  wb.SheetNames = ['📊 Summary', ...wb.SheetNames.filter(n => n !== '📊 Summary')];
+
+  XLSX.writeFile(wb, `PerfPath_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('✅ Excel file downloaded!');
+}
 </script></body></html>
